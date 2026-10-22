@@ -30,7 +30,7 @@ function Sparkline({ values, className }: { values: number[]; className?: string
     <div className="h-10 w-24">
       <ResponsiveContainer>
         <AreaChart data={data} margin={{ top: 2, bottom: 2, left: 0, right: 0 }}>
-          <Area type="monotone" dataKey="v" strokeWidth={1.5} className={className} stroke="currentColor" fill="currentColor" fillOpacity={0.12} isAnimationActive={false} />
+          <Area type="monotone" dataKey="v" strokeWidth={1.5} className={className ?? ""} stroke="currentColor" fill="currentColor" fillOpacity={0.12} isAnimationActive={false} />
         </AreaChart>
       </ResponsiveContainer>
     </div>

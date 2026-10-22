@@ -22,7 +22,7 @@ const tone: Record<string, string> = {
 
 export function StatusBadge({ value, className }: { value: string; className?: string }) {
   return (
-    <Badge variant="outline" className={cn("font-mono text-[11px] capitalize", tone[value] ?? tone.not_deployed, className)}>
+    <Badge variant="outline" className={cn("font-mono text-[11px] capitalize", tone[value] ?? tone["not_deployed"], className)}>
       {value.replace(/_/g, " ")}
       {/* index-signature safe lookup handled above */}
     </Badge>

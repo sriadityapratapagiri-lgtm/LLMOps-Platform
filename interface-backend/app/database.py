@@ -1,19 +1,28 @@
-
+import os
 import sqlite3
 from datetime import datetime, timezone
 from pathlib import Path
 
-DATABASE_PATH = Path(__file__).resolve().parent.parent / "inference.db"
+DEFAULT_DATABASE_PATH = Path(__file__).resolve().parent.parent / "inference.db"
 
 
-def get_connection():
-    connection = sqlite3.connect(DATABASE_PATH)
+def get_database_path() -> Path:
+    env_path = os.getenv("DATABASE_PATH")
+    if env_path:
+        return Path(env_path)
+    return DEFAULT_DATABASE_PATH
+
+
+def get_connection(db_path: Path | str | None = None):
+    target_path = Path(db_path) if db_path else get_database_path()
+    target_path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(target_path)
     connection.row_factory = sqlite3.Row
     return connection
 
 
-def initialize_database():
-    with get_connection() as connection:
+def initialize_database(db_path: Path | str | None = None):
+    with get_connection(db_path) as connection:
         # Store inference request history.
         connection.execute(
             """

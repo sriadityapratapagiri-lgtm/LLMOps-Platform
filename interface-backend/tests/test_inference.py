@@ -1,8 +1,19 @@
 from fastapi.testclient import TestClient
 import sqlite3
+import uuid
+import pytest
 from app.main import app
+from app.database import get_connection, initialize_database
 
 client = TestClient(app)
+
+
+@pytest.fixture(autouse=True)
+def isolated_db(tmp_path, monkeypatch):
+    test_db = tmp_path / "test_inference.db"
+    monkeypatch.setenv("DATABASE_PATH", str(test_db))
+    initialize_database()
+    yield
 
 
 def test_inference_success():
@@ -97,6 +108,16 @@ def test_inference_request_is_persisted():
 
 def test_request_logs_pagination():
     with TestClient(app) as test_client:
+        # Create requests to paginate over
+        test_client.post(
+            "/api/v1/inference",
+            json={"model_id": "mock-model-v1", "prompt": "Prompt 1", "max_tokens": 50},
+        )
+        test_client.post(
+            "/api/v1/inference",
+            json={"model_id": "mock-model-v1", "prompt": "Prompt 2", "max_tokens": 50},
+        )
+
         response = test_client.get(
             "/api/v1/requests",
             params={"limit": 1, "offset": 0},
@@ -106,7 +127,7 @@ def test_request_logs_pagination():
 
         data = response.json()
 
-        assert data["total"] >= 1
+        assert data["total"] >= 2
         assert data["limit"] == 1
         assert data["offset"] == 0
         assert len(data["requests"]) == 1
@@ -126,6 +147,29 @@ def test_metrics_endpoint():
         assert data["average_latency_ms"] >= 0
         assert data["total_input_tokens"] >= 0
         assert data["total_output_tokens"] >= 0
+
+
+def test_metrics_summary_endpoint():
+    with TestClient(app) as test_client:
+        response = test_client.get("/api/v1/metrics/summary")
+
+        assert response.status_code == 200
+
+        data = response.json()
+        assert "totalRequests" in data
+        assert "errorRate" in data
+        assert "totalTokens" in data
+        assert "sparklines" in data
+        assert data["totalRequests"] >= 0
+        assert 0 <= data["errorRate"] <= 1
+
+
+def test_metrics_timeseries_endpoint():
+    with TestClient(app) as test_client:
+        response = test_client.get("/api/v1/metrics/timeseries?range=24h")
+
+        assert response.status_code == 200
+        assert isinstance(response.json(), list)
 
 
 def test_metrics_match_database():
@@ -221,34 +265,46 @@ def test_get_unknown_model_details():
 
 
 def test_register_model():
-    response = client.post(
-        "/api/v1/models",
-        json={
-            "model_id": "registration-test-model",
-            "model_version": "1.0.0",
-            "provider": "mock",
-            "description": "Model registration test",
-        },
-    )
+    # Use a unique model_id so repeated test runs do not hit a conflict.
+    model_id = f"registration-test-{uuid.uuid4().hex[:8]}"
+    try:
+        response = client.post(
+            "/api/v1/models",
+            json={
+                "model_id": model_id,
+                "model_version": "1.0.0",
+                "provider": "mock",
+                "description": "Model registration test",
+            },
+        )
 
-    assert response.status_code == 201
-    data = response.json()["model"]
-    assert data["model_id"] == "registration-test-model"
-    assert data["model_version"] == "1.0.0"
-    assert data["provider"] == "mock"
-    assert data["status"] == "ready"
+        assert response.status_code == 201
+        data = response.json()["model"]
+        assert data["model_id"] == model_id
+        assert data["model_version"] == "1.0.0"
+        assert data["provider"] == "mock"
+        assert data["status"] == "ready"
+    finally:
+        # Clean up so repeated runs leave no orphaned records.
+        with get_connection() as conn:
+            conn.execute("DELETE FROM models WHERE model_id = ?", (model_id,))
 
 
 def test_register_duplicate_model_id():
+    model_id = f"duplicate-test-{uuid.uuid4().hex[:8]}"
     payload = {
-        "model_id": "duplicate-test-model",
+        "model_id": model_id,
         "model_version": "1.0.0",
         "provider": "mock",
         "description": "Duplicate registration test",
     }
 
-    first_response = client.post("/api/v1/models", json=payload)
-    second_response = client.post("/api/v1/models", json=payload)
+    try:
+        first_response = client.post("/api/v1/models", json=payload)
+        second_response = client.post("/api/v1/models", json=payload)
 
-    assert first_response.status_code == 201
-    assert second_response.status_code == 409
+        assert first_response.status_code == 201
+        assert second_response.status_code == 409
+    finally:
+        with get_connection() as conn:
+            conn.execute("DELETE FROM models WHERE model_id = ?", (model_id,))

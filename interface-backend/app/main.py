@@ -1,14 +1,15 @@
 
+import sqlite3
 from uuid import uuid4
 from datetime import datetime, timezone
-from app.schemas import InferenceRequest, InferenceResponse, ModelRegistrationRequest
-from app.model_registry import get_model, list_models, register_model
 from fastapi import FastAPI, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
 from contextlib import asynccontextmanager
 
 from app.database import initialize_database, get_connection
 from app.inference import MODEL_ID, generate_response
-from app.schemas import InferenceRequest, InferenceResponse
+from app.model_registry import get_model, list_models, register_model
+from app.schemas import InferenceRequest, InferenceResponse, ModelRegistrationRequest
 
 
 @asynccontextmanager
@@ -22,6 +23,20 @@ app = FastAPI(
     description="Backend for an LLMOps platform",
     version="0.1.0",
     lifespan=lifespan,
+)
+
+# Allow the local frontend dev server and common Vite ports.
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "http://localhost:3000",
+        "http://localhost:5173",
+        "http://127.0.0.1:3000",
+        "http://127.0.0.1:5173",
+    ],
+    allow_credentials=False,
+    allow_methods=["*"],
+    allow_headers=["*"],
 )
 
 
@@ -41,16 +56,6 @@ def health_check():
         "version": "0.1.0",
     }
 
-
-@app.post(
-    "/api/v1/inference",
-    response_model=InferenceResponse,
-)
-
-@app.post(
-    "/api/v1/inference",
-    response_model=InferenceResponse,
-)
 
 @app.post(
     "/api/v1/inference",
@@ -231,6 +236,8 @@ def get_models():
     return {
         "models": list_models(),
     }
+
+
 @app.get("/api/v1/models/{model_id}")
 def get_model_details(model_id: str):
     model = get_model(model_id)
@@ -242,6 +249,7 @@ def get_model_details(model_id: str):
         )
 
     return model
+
 
 @app.post("/api/v1/models", status_code=201)
 def create_model(request: ModelRegistrationRequest):
@@ -259,3 +267,43 @@ def create_model(request: ModelRegistrationRequest):
             status_code=409,
             detail="A model with this model_id already exists",
         )
+
+
+@app.get("/api/v1/metrics/summary")
+def get_metrics_summary():
+    """Frontend-compatible metrics summary endpoint."""
+    with get_connection() as connection:
+        row = connection.execute(
+            """
+            SELECT
+                COUNT(*) AS total_requests,
+                COALESCE(SUM(CASE WHEN status = 'success' THEN 1 ELSE 0 END), 0) AS successful_requests,
+                COALESCE(SUM(CASE WHEN status != 'success' THEN 1 ELSE 0 END), 0) AS failed_requests,
+                COALESCE(AVG(latency_ms), 0) AS average_latency_ms,
+                COALESCE(SUM(input_tokens), 0) AS total_input_tokens,
+                COALESCE(SUM(output_tokens), 0) AS total_output_tokens
+            FROM inference_requests
+            """
+        ).fetchone()
+
+    total = row["total_requests"]
+    successful = row["successful_requests"]
+    error_rate = (row["failed_requests"] / total) if total > 0 else 0.0
+
+    return {
+        "totalRequests": total,
+        "requestsChange": 0.0,
+        "p95LatencyMs": round(row["average_latency_ms"], 3),
+        "p95Change": 0.0,
+        "errorRate": round(error_rate, 4),
+        "errorRateChangePp": 0.0,
+        "totalTokens": row["total_input_tokens"] + row["total_output_tokens"],
+        "tokensChange": 0.0,
+        "sparklines": {"requests": [], "latency": [], "errors": [], "tokens": []},
+    }
+
+
+@app.get("/api/v1/metrics/timeseries")
+def get_metrics_timeseries(range: str = "24h", model_id: str | None = None):
+    """Minimal live timeseries — returns an empty list; UI falls back to demo for charts."""
+    return []

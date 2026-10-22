@@ -10,7 +10,12 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as DeploymentsRouteImport } from './routes/deployments'
+import { Route as EvaluationsRouteImport } from './routes/evaluations'
+import { Route as MetricsRouteImport } from './routes/metrics'
 import { Route as PlaygroundRouteImport } from './routes/playground'
+import { Route as RequestsRouteImport } from './routes/requests'
+import { Route as SettingsRouteImport } from './routes/settings'
 import { Route as ModelsIndexRouteImport } from './routes/models.index'
 import { Route as ModelsIdRouteImport } from './routes/models.$id'
 
@@ -19,9 +24,34 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const DeploymentsRoute = DeploymentsRouteImport.update({
+  id: '/deployments',
+  path: '/deployments',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EvaluationsRoute = EvaluationsRouteImport.update({
+  id: '/evaluations',
+  path: '/evaluations',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const MetricsRoute = MetricsRouteImport.update({
+  id: '/metrics',
+  path: '/metrics',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const PlaygroundRoute = PlaygroundRouteImport.update({
   id: '/playground',
   path: '/playground',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const RequestsRoute = RequestsRouteImport.update({
+  id: '/requests',
+  path: '/requests',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const SettingsRoute = SettingsRouteImport.update({
+  id: '/settings',
+  path: '/settings',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ModelsIndexRoute = ModelsIndexRouteImport.update({
@@ -37,34 +67,82 @@ const ModelsIdRoute = ModelsIdRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/deployments': typeof DeploymentsRoute
+  '/evaluations': typeof EvaluationsRoute
+  '/metrics': typeof MetricsRoute
   '/playground': typeof PlaygroundRoute
+  '/requests': typeof RequestsRoute
+  '/settings': typeof SettingsRoute
   '/models/$id': typeof ModelsIdRoute
   '/models/': typeof ModelsIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/deployments': typeof DeploymentsRoute
+  '/evaluations': typeof EvaluationsRoute
+  '/metrics': typeof MetricsRoute
   '/playground': typeof PlaygroundRoute
+  '/requests': typeof RequestsRoute
+  '/settings': typeof SettingsRoute
   '/models/$id': typeof ModelsIdRoute
   '/models': typeof ModelsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/deployments': typeof DeploymentsRoute
+  '/evaluations': typeof EvaluationsRoute
+  '/metrics': typeof MetricsRoute
   '/playground': typeof PlaygroundRoute
+  '/requests': typeof RequestsRoute
+  '/settings': typeof SettingsRoute
   '/models/$id': typeof ModelsIdRoute
   '/models/': typeof ModelsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/playground' | '/models/$id' | '/models/'
+  fullPaths:
+    | '/'
+    | '/deployments'
+    | '/evaluations'
+    | '/metrics'
+    | '/playground'
+    | '/requests'
+    | '/settings'
+    | '/models/$id'
+    | '/models/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/playground' | '/models/$id' | '/models'
-  id: '__root__' | '/' | '/playground' | '/models/$id' | '/models/'
+  to:
+    | '/'
+    | '/deployments'
+    | '/evaluations'
+    | '/metrics'
+    | '/playground'
+    | '/requests'
+    | '/settings'
+    | '/models/$id'
+    | '/models'
+  id:
+    | '__root__'
+    | '/'
+    | '/deployments'
+    | '/evaluations'
+    | '/metrics'
+    | '/playground'
+    | '/requests'
+    | '/settings'
+    | '/models/$id'
+    | '/models/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  DeploymentsRoute: typeof DeploymentsRoute
+  EvaluationsRoute: typeof EvaluationsRoute
+  MetricsRoute: typeof MetricsRoute
   PlaygroundRoute: typeof PlaygroundRoute
+  RequestsRoute: typeof RequestsRoute
+  SettingsRoute: typeof SettingsRoute
   ModelsIdRoute: typeof ModelsIdRoute
   ModelsIndexRoute: typeof ModelsIndexRoute
 }
@@ -78,11 +156,46 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/deployments': {
+      id: '/deployments'
+      path: '/deployments'
+      fullPath: '/deployments'
+      preLoaderRoute: typeof DeploymentsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/evaluations': {
+      id: '/evaluations'
+      path: '/evaluations'
+      fullPath: '/evaluations'
+      preLoaderRoute: typeof EvaluationsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/metrics': {
+      id: '/metrics'
+      path: '/metrics'
+      fullPath: '/metrics'
+      preLoaderRoute: typeof MetricsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/playground': {
       id: '/playground'
       path: '/playground'
       fullPath: '/playground'
       preLoaderRoute: typeof PlaygroundRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/requests': {
+      id: '/requests'
+      path: '/requests'
+      fullPath: '/requests'
+      preLoaderRoute: typeof RequestsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/settings': {
+      id: '/settings'
+      path: '/settings'
+      fullPath: '/settings'
+      preLoaderRoute: typeof SettingsRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/models/': {
@@ -104,7 +217,12 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  DeploymentsRoute: DeploymentsRoute,
+  EvaluationsRoute: EvaluationsRoute,
+  MetricsRoute: MetricsRoute,
   PlaygroundRoute: PlaygroundRoute,
+  RequestsRoute: RequestsRoute,
+  SettingsRoute: SettingsRoute,
   ModelsIdRoute: ModelsIdRoute,
   ModelsIndexRoute: ModelsIndexRoute,
 }

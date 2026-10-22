@@ -42,7 +42,7 @@ export const connectionQuery = queryOptions({
 
 export const modelsQuery = queryOptions({
   queryKey: ["models"],
-  queryFn: () => withFallback<Model[]>(api.listModels, demo.listModels),
+  queryFn: () => withFallback<Model[]>(() => api.listModels(), demo.listModels),
 });
 
 export const modelQuery = (id: string) =>
@@ -53,7 +53,7 @@ export const modelQuery = (id: string) =>
 
 export const requestsQuery = queryOptions({
   queryKey: ["requests"],
-  queryFn: () => withFallback(api.listRequests, demo.listRequests),
+  queryFn: () => withFallback(() => api.listRequests(), demo.listRequests),
 });
 
 export const metricsSummaryQuery = (range: TimeRange) =>
